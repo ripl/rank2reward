@@ -48,7 +48,7 @@ def generate_expert_data(
     # video recorder so we can see what the experts look like
     if generate_videos:
         data_dir = Path(os.path.dirname(expert_data_path))
-        video_recorder = VideoRecorder(data_dir, folder_name="experts_test" if "test" in expert_data_path else "experts_train", render_size=96, camera_name="left_cap2")
+        video_recorder = VideoRecorder(data_dir, folder_name="experts_test" if "test" in expert_data_path else "experts_train", render_size=96, camera_name="corner2")
 
     # collect the data
     success_count = 0
@@ -392,6 +392,11 @@ class LearnedRewardFunction():
         the ranking function is purely a function of expert data, so we can just train this once and not worry about
         training it again during RL
         '''
+        if os.path.exists(f"{self.exp_dir}/same_classifier_policy.pt"):
+            print(f"Found ranking function and classifier policy on disk. Loading...")
+            self.load_models()
+            return
+        
         if self.disable_ranking:
             print(f"LRF not configured to use a ranking function. Not training!")
             return
@@ -795,7 +800,7 @@ if __name__ == "__main__":
     ]
 
     for env_str in tqdm(envs):
-        env = ImageMetaworldEnv(env_str, camera_name="left_cap2", high_res_env=False)
+        env = ImageMetaworldEnv(env_str, camera_name="corner2", high_res_env=False)
         expert_data_dir = os.path.expanduser(f"~/code/rewardlearning-vid/ROT/ROT/expert_demos/{env_str}")
         if not os.path.exists(expert_data_dir):
             os.makedirs(expert_data_dir)

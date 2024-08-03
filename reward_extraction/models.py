@@ -276,7 +276,8 @@ class R3MPolicy(nn.Module):
         elif self.state_only:
             fc_head_in = self.r3m_embedding_dim
         else:
-            fc_head_in = self.r3m_embedding_dim + 3
+            # fc_head_in = self.r3m_embedding_dim + 3
+            fc_head_in = self.r3m_embedding_dim #### ADDED: changed this line from their original implementation
         self.output_size = output_size
         self.fc_head = nn.Sequential(
             nn.Linear(fc_head_in, 256),
@@ -297,16 +298,17 @@ class R3MPolicy(nn.Module):
                 x = self.r3m(x)
         else:
             x = self.r3m(x)
-
         if not self.state_only:
             # film layer
             if self.film_layer_goal:
-                gammabeta = self.film_layer(goal)
-                gamma, beta = torch.split(gammabeta, self.r3m_embedding_dim, dim=1)
-                x = x * gamma + beta
+                # gammabeta = self.film_layer(goal)
+                # gamma, beta = torch.split(gammabeta, self.r3m_embedding_dim, dim=1)
+                # x = x * gamma + beta
+                pass ### ADDED: commented this block out from their original implementation
             else:
                 # mix and run through head
-                x = torch.cat([x, goal], dim=1)
+                pass
+                # x = torch.cat([x, goal], dim=1) ### ADDED: commented this line out from their original implementation
 
         x = self.fc_head(x)
         return x

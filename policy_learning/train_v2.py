@@ -22,7 +22,7 @@ import drqv2.dmc as dmc
 from drqv2.drqv2 import DrQV2Agent
 import drqv2.utils as drqv2_utils
 from drqv2.replay_buffer import ReplayBuffer, ReplayBufferStorage, make_replay_loader
-from drqv2.video import VideoRecorder
+from policy_learning.video import VideoRecorder # Modified version of the file in drqv2 to render reward on the frame
 
 from policy_learning.envs import (
     ImageMetaworldEnv,
@@ -51,7 +51,7 @@ class MetaworldWorkspaceV2:
         num_seed_frames: int = 5000,
         num_train_frames: int = 1500000,
         save_eval_video: bool = True,
-        save_train_video: bool = True,
+        save_train_video: bool = False,
         with_online_learned_reward_fn: bool = False,
         drqv2_feature_dim: int = 50,
         train_classifier_with_mixup: bool = True,
@@ -235,6 +235,9 @@ class MetaworldWorkspaceV2:
         self._global_step = 0
         self._global_episode = 0
 
+        # Load snapshot if it exists
+        if os.path.exists(self.work_dir / 'snapshot.pt'):
+            self.load_snapshot()
 
     def setup(self):
         assert self.rl_on_state == self.lrf_on_state
@@ -419,10 +422,13 @@ class MetaworldWorkspaceV2:
                                             eval_mode=True,
                                             proprioception=time_step.metaworld_state_obs[:proprioception_dim])
                 time_step = self.eval_env.step(action)
-                self.video_recorder.record(self.eval_env)
 
                 per_episode_reward += time_step.reward
-                per_episode_og_reward += self.eval_env.get_last_received_reward()
+                cur_og_reward = self.eval_env.get_last_received_reward()
+                per_episode_og_reward += cur_og_reward
+
+                # render the current og_reward at the frame and the cumulative og_reward up to the frame
+                self.video_recorder.record(self.eval_env, cur_og_reward, per_episode_og_reward)
 
                 step += 1
                 succeeded |= int(time_step.success)
@@ -507,7 +513,7 @@ class MetaworldWorkspaceV2:
                         'train/buffer_size': len(self.replay_storage),
                         'train/step': self.global_step,
                     }
-                    if self._global_episode % 10 == 0:
+                    if self._global_episode % 1 == 0:
                         wandb.log(metrics, step=self.global_frame)
 
                 # reset env
@@ -521,6 +527,7 @@ class MetaworldWorkspaceV2:
                 # try to save snapshot
                 if self._global_episode % 100 == 0 and self.cfg.save_snapshot:
                     self.save_snapshot()
+                    self.learned_reward_function.save_models(save_dir=self.work_dir)
                 episode_step = 0
                 episode_reward = 0
                 og_episode_reward = 0
@@ -696,7 +703,7 @@ def run_train():
     elif args.train_soil:
         exp_style = "soil"
     elif args.use_online_lrf:
-        exp_style = "lrf"
+        exp_style = "rank2reward"
     elif args.train_tcn:
         exp_style = "tcn"
     else:
@@ -716,9 +723,11 @@ def run_train():
 
     date_str = datetime.today().strftime('%Y-%m-%d')
 
-    exp_str = f"{date_str}/{folder_substr}/{args.env_str}-{exp_substr}-seed-{args.seed}-dr-{args.discount_rate}-refresh-{args.refresh_reward}-logr-{args.take_log_reward}-d-{args.take_d_ratio}-lgn-{args.lgn_multiplier}"
-    if args.turn_off_mixup and args.turn_off_film:
-        exp_str += "-noregularization"
+    # exp_str = f"{date_str}/{folder_substr}/{args.env_str}-{exp_substr}-seed-{args.seed}-dr-{args.discount_rate}-refresh-{args.refresh_reward}-logr-{args.take_log_reward}-d-{args.take_d_ratio}-lgn-{args.lgn_multiplier}"
+    # if args.turn_off_mixup and args.turn_off_film:
+    #     exp_str += "-noregularization"
+    exp_str = f"{args.env_str}/{exp_style}/{args.env_str}-{args.seed}"
+    
 
     print(f"exp_str: {exp_str}")
 
@@ -735,7 +744,7 @@ def run_train():
         drqv2_feature_dim=128,
         train_classifier_with_mixup=train_classifier_with_mixup,
         do_film_layer=do_film_layer,
-        camera_name="left_cap2",
+        camera_name="corner2",
         with_ppc=True,
         rl_on_state=args.rl_on_state,
         lrf_on_state=args.lrf_on_state,
@@ -752,6 +761,7 @@ def run_train():
     )
 
     workspace.train()
+    workspace.eval('final')
     if args.use_online_lrf and not args.disable_classifier:
         workspace.eval_lrf()
 

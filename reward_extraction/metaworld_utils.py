@@ -64,6 +64,8 @@ def random_reset(env_str, env, goal_pos=None, hand_init=None, obj_pos=None):
     metaworld environments require us to properly set the goal and hand and obj reset bounds
     consolidating the times this is done to this method to minimize random reset constants floating around
     '''
+    if env._camera_name == "corner2":
+        env.model.cam_pos[2][:] = [0.75, 0.075, 0.7]
     env.reset()
 
     if not ((goal_pos is not None) or (hand_init is not None) or (obj_pos is not None)):
@@ -154,7 +156,7 @@ def collect_data(
                 if render:
                     curr_img = np.zeros((224, 224, 3))
                 else:
-                    curr_img = env.sim.render(224, 224, mode='offscreen', camera_name='topview')
+                    curr_img = env.sim.render(224, 224, mode='offscreen', camera_name='corner2')
                 traj['images'].append(curr_img.copy())
 
             curr_goal = env._get_obs_dict()['state_desired_goal']
