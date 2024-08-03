@@ -373,7 +373,8 @@ class MetaworldWorkspaceV2:
         if  self.with_high_res_img:
             render_size = 224
         else:
-            render_size = 96
+            # render_size = 96
+            render_size = 256
         self.video_recorder = VideoRecorder(self.work_dir if self.cfg.save_eval_video else None, folder_name="eval_video", render_size=render_size, camera_name=self.camera_name)
         self.train_video_recorder = VideoRecorder(self.work_dir if self.cfg.save_train_video else None, folder_name="train_video", render_size=render_size, camera_name=self.camera_name)
 
@@ -423,12 +424,13 @@ class MetaworldWorkspaceV2:
                                             proprioception=time_step.metaworld_state_obs[:proprioception_dim])
                 time_step = self.eval_env.step(action)
 
-                per_episode_reward += time_step.reward
+                cur_reward = time_step.reward
+                per_episode_reward += cur_reward
                 cur_og_reward = self.eval_env.get_last_received_reward()
                 per_episode_og_reward += cur_og_reward
 
-                # render the current og_reward at the frame and the cumulative og_reward up to the frame
-                self.video_recorder.record(self.eval_env, cur_og_reward, per_episode_og_reward)
+                # Render the current reward/env_reward at the frame and the total reward/env_reward up to the frame
+                self.video_recorder.record(self.eval_env, cur_reward, per_episode_reward, cur_og_reward, per_episode_og_reward)
 
                 step += 1
                 succeeded |= int(time_step.success)
@@ -567,12 +569,15 @@ class MetaworldWorkspaceV2:
 
             # take env step
             time_step = self.train_env.step(action)
-            episode_reward += time_step.reward
-            og_episode_reward += self.train_env.get_last_received_reward()
+            cur_reward = time_step.reward
+            episode_reward += cur_reward
+            cur_og_reward = self.train_env.get_last_received_reward()
+            og_episode_reward += cur_og_reward
             self.replay_storage.add(time_step)
 
             if is_train_recording:
-                self.train_video_recorder.record(self.train_env)
+                # Render the current reward/env_reward at the frame and the total reward/env_reward up to the frame
+                self.train_video_recorder.record(self.train_env, cur_reward, episode_reward, cur_og_reward, og_episode_reward)
 
             # debug heartbeat
             if self._global_step % 5000 == 0:

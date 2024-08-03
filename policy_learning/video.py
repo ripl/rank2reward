@@ -28,7 +28,7 @@ class VideoRecorder:
         self.enabled = self.save_dir is not None and enabled
         self.record(env)
 
-    def record(self, env, cur_env_reward=None, cum_env_reward=None):
+    def record(self, env, cur_reward=None, total_reward=None, cur_env_reward=None, total_env_reward=None):
         if self.enabled:
             if hasattr(env, 'physics'):
                 frame = env.physics.render(height=self.render_size,
@@ -41,32 +41,51 @@ class VideoRecorder:
                 if self.camera_name in ["topview", "top_cap2", "left_cap2", "right_cap2"]:
                     frame = np.flipud(frame)
 
-            # Render the current og_reward at the frame and the cumulative og_reward up to the frame
-            if cur_env_reward is not None or cum_env_reward is not None:
+            # Render the current reward/env_reward at the frame and the total reward/env_reward up to the frame
+            if cur_reward or total_reward or cur_env_reward or total_env_reward:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                font_scale = self.render_size / 256
+                font_scale = self.render_size / 512
                 font_thickness = max(1, int(font_scale))
 
                 # Define colors
-                cur_color = (255, 255, 0)  # Cyan for current reward
-                cum_color = (0, 255, 0)    # Green for cumulative reward
+                total_env_color = (255, 255, 0) # Cyan for total environment reward
+                cur_env_color = (0, 255, 255) # Yellow for current environment reward
+                total_color = (0, 255, 0)       # Green for total reward
+                cur_color = (0, 165, 255)     # Orange for current reward
 
                 # Padding for text
                 padding = 5
 
-                if cur_env_reward is not None:
-                    cur_reward_text = f"Cur: {cur_env_reward:.2f}"
-                    cur_pos = (padding, self.render_size - padding)
-                    cv2.putText(frame, cur_reward_text, cur_pos, cv2.FONT_HERSHEY_SIMPLEX, font_scale, cur_color, font_thickness, cv2.LINE_AA)
+                # Initialize the starting position for the text
+                y_pos = self.render_size - padding
 
-                if cum_env_reward is not None:
-                    cum_reward_text = f"Cum: {cum_env_reward:.2f}"
-                    text_size, _ = cv2.getTextSize(cum_reward_text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)
-                    text_height = text_size[1]
-                    cum_pos = (padding, text_height + padding)
-                    cv2.putText(frame, cum_reward_text, cum_pos, cv2.FONT_HERSHEY_SIMPLEX, font_scale, cum_color, font_thickness, cv2.LINE_AA)
-                    
-            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                if cur_reward:
+                    cur_reward_text = f"cur: {cur_reward:.2f}"
+                    cur_pos = (padding, y_pos)
+                    cv2.putText(frame, cur_reward_text, cur_pos, cv2.FONT_HERSHEY_SIMPLEX, font_scale, cur_color, font_thickness, cv2.LINE_AA)
+                    text_size, _ = cv2.getTextSize(cur_reward_text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)
+                    y_pos -= text_size[1] + padding
+
+                if total_reward:
+                    total_reward_text = f"total: {total_reward:.2f}"
+                    total_pos = (padding, y_pos)
+                    cv2.putText(frame, total_reward_text, total_pos, cv2.FONT_HERSHEY_SIMPLEX, font_scale, total_color, font_thickness, cv2.LINE_AA)
+                    text_size, _ = cv2.getTextSize(total_reward_text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)
+                    y_pos -= text_size[1] + padding
+
+                if cur_env_reward:
+                    cur_env_reward_text = f"cur_env: {cur_env_reward:.2f}"
+                    cur_env_pos = (padding, y_pos)
+                    cv2.putText(frame, cur_env_reward_text, cur_env_pos, cv2.FONT_HERSHEY_SIMPLEX, font_scale, cur_env_color, font_thickness, cv2.LINE_AA)
+                    text_size, _ = cv2.getTextSize(cur_env_reward_text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, font_thickness)
+                    y_pos -= text_size[1] + padding
+
+                if total_env_reward:
+                    total_env_reward_text = f"total_env: {total_env_reward:.2f}"
+                    total_env_pos = (padding, y_pos)
+                    cv2.putText(frame, total_env_reward_text, total_env_pos, cv2.FONT_HERSHEY_SIMPLEX, font_scale, total_env_color, font_thickness, cv2.LINE_AA)
+
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             self.frames.append(frame)
 
     def save(self, file_name):
