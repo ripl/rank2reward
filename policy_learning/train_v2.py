@@ -50,7 +50,7 @@ class MetaworldWorkspaceV2:
         discount_rate: float = 0.99,
         num_seed_frames: int = 5000,
         num_train_frames: int = 1500000,
-        save_eval_video: bool = True,
+        save_eval_video: bool = False,
         save_train_video: bool = False,
         with_online_learned_reward_fn: bool = False,
         drqv2_feature_dim: int = 50,
