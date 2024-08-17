@@ -167,7 +167,7 @@ opencv-python==4.6.0.66
 opt-einsum==3.3.0
 optax==0.1.4
 orbax==0.1.7
-packaging==21.3
+packaging==24.1
 pandas==1.4.3
 pandocfilters==1.5.0
 params-proto==2.10.1
