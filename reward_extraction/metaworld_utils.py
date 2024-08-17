@@ -9,7 +9,8 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 VALID_METAWORLD_ENVS = [
     "reach", "push", "door-open",
     "door-close", "assembly", "bin-picking",
-    "button-press-topdown", "drawer-open", "hammer"
+    "button-press-topdown", "drawer-open", "hammer",
+    "peg-insert-side", "pick-place"
 ]
 
 def extract_from_obs(o, env_str):
@@ -20,7 +21,8 @@ def extract_from_obs(o, env_str):
     elif env_str in [
         "push", "door-open", "door-close",
         "assembly", "bin-picking", "button-press-topdown",
-        "drawer-open", "hammer"
+        "drawer-open", "hammer",
+        "peg-insert-side", "pick-place"
     ]:
         hand_pos = o[:3]
         goal_pos = o[-3:]
@@ -44,7 +46,8 @@ def process_obs(o, env_str, no_goal: bool = False, initial_state: np.ndarray = N
     elif env_str in [
         "push", "door-open", "door-close",
         "assembly", "bin-picking", "button-press-topdown",
-        "drawer-open", "hammer"
+        "drawer-open", "hammer",
+        "peg-insert-side", "pick-place"
     ]:
         if no_goal:
             assert initial_state is None
@@ -108,6 +111,9 @@ def random_reset(env_str, env, goal_pos=None, hand_init=None, obj_pos=None):
             obj_pos = np.random.uniform(low=[-0.1, 0.4, 0.0], high=[0.1, 0.5, 0.0], size=(3,))
             hand_init = None
             goal_pos = None
+        elif env_str == "peg-insert-side" or env_str == "pick-place":
+            o, obj_pos, goal_pos = env.reset_model_ood()
+            return o, obj_pos, goal_pos
         else:
             assert False
 
@@ -239,7 +245,7 @@ def set_reward_plot_limits(env_str):
         plt.xlim((-0.5, 0.5))
         plt.ylim((0.35, 0.95))
     else:
-        assert False
+        pass
 
 
 def plot_and_save_models(
