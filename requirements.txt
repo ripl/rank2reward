@@ -68,7 +68,7 @@ functional-notations==0.5.2
 future==0.18.3
 fvcore==0.1.5.post20221221
 gast==0.5.3
-gdown==4.7.1
+gdown==5.2.0
 gitdb==4.0.10
 GitPython==3.1.29
 glfw==2.5.4
