@@ -529,7 +529,8 @@ class MetaworldWorkspaceV2:
                 # try to save snapshot
                 if self._global_episode % 100 == 0 and self.cfg.save_snapshot:
                     self.save_snapshot()
-                    self.learned_reward_function.save_models(save_dir=self.work_dir)
+                    if self.with_online_learned_reward_fn:
+                        self.learned_reward_function.save_models(save_dir=self.work_dir)
                 episode_step = 0
                 episode_reward = 0
                 og_episode_reward = 0

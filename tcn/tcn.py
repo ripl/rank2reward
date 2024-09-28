@@ -1,4 +1,8 @@
 import os
+import sys
+import argparse
+from pathlib import Path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -158,24 +162,27 @@ def train_tcn(model, optimizer, expert_data_path, iterations, margin, work_dir):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Train TCN model for different Metaworld tasks.")
+    parser.add_argument("--env", type=str, required=True, help="Metaworld task")
+    args = parser.parse_args()
     envs = [
-        "assembly", "drawer-open", "hammer", "door-close", "push",
-        "reach", "button-press-topdown", "door-open"
+        "drawer-open", "hammer", "door-open",
+        "reach", "peg-insert-side", "pick-place"
     ]
+    task_name = args.env
+    assert task_name in envs
 
-    for env in envs:
-        model = TCNModel().to(device)
-        lr=1e-4
-        optimizer = optim.Adam(list(model.parameters()), lr=lr)
+    model = TCNModel().to(device)
+    lr=1e-4
+    optimizer = optim.Adam(list(model.parameters()), lr=lr)
 
-        rewardlearning_vid_repo_root = os.path.expanduser("~/code/rewardlearning-vid")
-        task_name = env
-        work_dir = f"{rewardlearning_vid_repo_root}/tcn/models/{task_name}"
-        if not os.path.exists(work_dir):
-            os.makedirs(work_dir)
-        expert_data_path = f"{rewardlearning_vid_repo_root}/ROT/ROT/expert_demos/{task_name}/expert_data.hdf"
-        iterations = 5_000
-        margin = 2.0
-        train_tcn(model, optimizer, expert_data_path, iterations, margin, work_dir)
+    rewardlearning_vid_repo_root = Path.cwd()
+    work_dir = f"{rewardlearning_vid_repo_root}/tcn/models/{task_name}"
+    if not os.path.exists(work_dir):
+        os.makedirs(work_dir)
+    expert_data_path = f"{rewardlearning_vid_repo_root}/tcn/expert_demos/{task_name}/expert_data.hdf"
+    iterations = 5_000
+    margin = 2.0
+    train_tcn(model, optimizer, expert_data_path, iterations, margin, work_dir)
 
-        torch.save(model.state_dict(), f"{work_dir}/tcn_embedder.pt")
+    torch.save(model.state_dict(), f"{work_dir}/tcn_embedder.pt")
